@@ -1,0 +1,14 @@
+plant,generator ID,technology,energy_source,prime_mover,nameplate_capacity,nameplate_mwh,ba,status
+FPL Energy Illinois Wind LLC Hybrid,BFT,Batteries,MWH,BA,20.0,80.0,PJM,OP
+Grand Ridge Battery Projects GIVB,GIVB,Batteries,MWH,BA,4.5,18.0,PJM,OP
+Grand Ridge Battery Projects GRES,GRES,Batteries,MWH,BA,31.5,126.0,PJM,OP
+McHenry Battery Storage,MCH1,Batteries,MWH,BA,20.0,80.0,PJM,OP
+TAC-Distributed Energy Resource Hybrid,BA_TAC,Batteries,MWH,BA,0.3,1.2,MISO,OP
+Marengo Battery Storage LLC,MBSS,Batteries,MWH,BA,20.0,80.0,PJM,OS
+Coffeen Solar BESS,2_Coffeen,Batteries,MWH,BA,2.0,8.0,MISO,OP
+Baldwin Solar BESS,2_Baldwin,Batteries,MWH,BA,2.0,8.0,MISO,OP
+Mulligan Solar LLC,MLGA2,Batteries,MWH,BA,40.0,160.0,MISO,L
+Newton Solar BESS LLC,BA_Newton,Batteries,MWH,BA,2.0,8.0,MISO,P
+Meadow Springs Renewable Energy,MSPRB,Batteries,MWH,BA,150.0,600.0,MISO,P
+Romeoville 34B,C34BB,Batteries,MWH,BA,0.5,2.0,PJM,L
+Romeoville 34A,C34AB,Batteries,MWH,BA,0.5,2.0,PJM,L

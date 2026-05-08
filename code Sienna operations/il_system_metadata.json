@@ -1,0 +1,40 @@
+{
+    "name": "Illinois",
+    "description": "",
+    "frequency": 60,
+    "time_series_resolutions_milliseconds": [
+        3600000
+    ],
+    "component_counts": [
+        {
+            "type": "ACBus",
+            "count": 1
+        },
+        {
+            "type": "EnergyReservoirStorage",
+            "count": 13
+        },
+        {
+            "type": "HydroDispatch",
+            "count": 21
+        },
+        {
+            "type": "RenewableDispatch",
+            "count": 72
+        },
+        {
+            "type": "StandardLoad",
+            "count": 4
+        },
+        {
+            "type": "ThermalStandard",
+            "count": 250
+        }
+    ],
+    "time_series_counts": [
+        {
+            "type": "SingleTimeSeries",
+            "count": 97
+        }
+    ]
+}
