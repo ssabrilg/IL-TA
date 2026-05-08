@@ -3,7 +3,7 @@ const PSY = PowerSystems
 
 function make_thermal(
     sys::System,
-    name::String,
+    name::AbstractString,
     capacity::Float64,
     bus::PSY.ACBus,
     active_power_limits::NamedTuple,
@@ -12,8 +12,10 @@ function make_thermal(
     fuel_rate::Float64,
     fuel_cost::Float64,
     available::Int,
-    fuel::String31,
-    prime_mover::String3)
+    fuel::AbstractString,
+    prime_mover::AbstractString)
+    println("make_thermal: name='$name' | cost_map size=$(length(cost_map)) | found=$(haskey(cost_map, String(name)))")
+
     if active_power_limits.min > active_power_limits.max
         error("incorrect active power limits for thermal gen $name")
     end
@@ -21,41 +23,57 @@ function make_thermal(
         @warn("Generator $name connected to isolated bus $(get_number(bus)) changed to ACBusTypes.PV")
         set_bustype!(bus, ACBusTypes.PV)
     end
+
+    # ── Use parsed piecewise cost if available, else fall back to linear ───────
+    op_cost = get(cost_map, name, nothing)
+    operation_cost = if !isnothing(op_cost)
+        ThermalGenerationCost(;
+            variable = FuelCurve(;
+                value_curve = PiecewiseIncrementalCurve(
+                    op_cost.initial_input,
+                    op_cost.x_coords,
+                    op_cost.y_coords,
+                ),
+                fuel_cost = op_cost.fuel_cost,
+            ),
+            fixed     = op_cost.fixed_cost,
+            start_up  = op_cost.startup_cost,
+            shut_down = op_cost.shutdown_cost,
+        )
+    else
+        @warn "No parsed cost for $name, using linear fallback"
+        ThermalGenerationCost(;
+            variable = FuelCurve(; value_curve = LinearCurve(fuel_rate), fuel_cost = fuel_cost),
+            fixed    = 0.0,
+            start_up  = 1000.0,
+            shut_down = 1000.0,
+        )
+    end
+
     device = ThermalStandard(
-        name=strip(name),
-        status=true,
-        bus=bus,
-        available= available,
-        active_power=max(0.3, active_power_limits.min),
-        reactive_power=0.0,
-        rating=1.0,
-        active_power_limits=active_power_limits,
-        reactive_power_limits=reactive_power_limits,
-        ramp_limits=nothing,
-        operation_cost = ThermalGenerationCost(;
-           variable = FuelCurve(; value_curve = LinearCurve(fuel_rate), fuel_cost = fuel_cost),
-           fixed = 0,
-           start_up = 1000.0,
-           shut_down = 1000.0,
-       ),
-        #operation_cost = ThermalGenerationCost(;
-        #    variable = CostCurve(LinearCurve(cost)),
-        #    fixed = 0.0,
-        #    start_up = cost/10.0,
-        #    shut_down = 0.0,
-        #),
-        base_power = capacity,
-        time_limits=nothing,
-        must_run=false,
-        prime_mover_type=prime_mover_dict[prime_mover],
-        fuel=fuel_dict[fuel],
+        name                 = strip(name),
+        status               = true,
+        bus                  = bus,
+        available            = available,
+        active_power         = max(0.3, active_power_limits.min),
+        reactive_power       = 0.0,
+        rating               = 1.0,
+        active_power_limits  = active_power_limits,
+        reactive_power_limits = reactive_power_limits,
+        ramp_limits          = nothing,
+        operation_cost       = operation_cost,
+        base_power           = capacity,
+        time_limits          = nothing,
+        must_run             = false,
+        prime_mover_type     = prime_mover_dict[prime_mover],
+        fuel                 = fuel_dict[fuel],
     )
     add_component!(sys, device)
 end
 
 function make_thermal_mts(
     sys::System,
-    name::String,
+    name::AbstractString,
     capacity::Float64,
     bus::PSY.ACBus,
     active_power_limits::NamedTuple,
@@ -64,8 +82,9 @@ function make_thermal_mts(
     fuel_rate::Float64,
     fuel_cost::Float64,
     available::Int,
-    fuel::String31,
-    prime_mover::String3)
+    fuel::AbstractString,
+    prime_mover::AbstractString)
+
     if active_power_limits.min > active_power_limits.max
         error("incorrect active power limits for thermal gen $name")
     end
@@ -73,37 +92,53 @@ function make_thermal_mts(
         @warn("Generator $name connected to isolated bus $(get_number(bus)) changed to ACBusTypes.PV")
         set_bustype!(bus, ACBusTypes.PV)
     end
+
+    # ── Use parsed piecewise cost if available, else fall back to linear ───────
+    op_cost = get(cost_map, strip(name), nothing)
+    operation_cost = if !isnothing(op_cost)
+        ThermalGenerationCost(;
+            variable  = FuelCurve(;
+                value_curve = PiecewiseIncrementalCurve(
+                    op_cost.initial_input,
+                    op_cost.x_coords,
+                    op_cost.y_coords,
+                ),
+                fuel_cost = op_cost.fuel_cost,
+            ),
+            fixed     = op_cost.fixed_cost,
+            start_up  = op_cost.startup_cost,
+            shut_down = op_cost.shutdown_cost,
+        )
+    else
+        @warn "No parsed cost for $name, using linear fallback"
+        ThermalGenerationCost(;
+            variable  = FuelCurve(; value_curve = LinearCurve(fuel_rate), fuel_cost = fuel_cost),
+            fixed     = 0.0,
+            start_up  = 1000.0,
+            shut_down = 1000.0,
+        )
+    end
+
     device = ThermalMultiStart(
-        name=strip(name),
-        status=true,
-        bus=bus,
-        available= available,
-        active_power=max(0.3, active_power_limits.min),
-        reactive_power=0.0,
-        rating=1.0,
-        active_power_limits=active_power_limits,
-        reactive_power_limits=reactive_power_limits,
-        ramp_limits=nothing,
-        power_trajectory = nothing,
-        start_time_limits = nothing,
-        start_types = 1,
-        operation_cost = ThermalGenerationCost(;
-           variable = FuelCurve(; value_curve = LinearCurve(fuel_rate), fuel_cost = fuel_cost),
-           fixed = 0,
-           start_up = 1000.0,
-           shut_down = 1000.0,
-       ),
-        #operation_cost = ThermalGenerationCost(;
-        #    variable = CostCurve(LinearCurve(cost)),
-        #    fixed = 0.0,
-        #    start_up = cost/10.0,
-        #    shut_down = 0.0,
-        #),
-        base_power = capacity,
-        time_limits=nothing,
-        must_run=false,
-        prime_mover_type=prime_mover_dict[prime_mover],
-        fuel=fuel_dict[fuel],
+        name                  = strip(name),
+        status                = true,
+        bus                   = bus,
+        available             = available,
+        active_power          = max(0.3, active_power_limits.min),
+        reactive_power        = 0.0,
+        rating                = 1.0,
+        active_power_limits   = active_power_limits,
+        reactive_power_limits = reactive_power_limits,
+        ramp_limits           = nothing,
+        power_trajectory      = nothing,
+        start_time_limits     = nothing,
+        start_types           = 1,
+        operation_cost        = operation_cost,
+        base_power            = capacity,
+        time_limits           = nothing,
+        must_run              = false,
+        prime_mover_type      = prime_mover_dict[prime_mover],
+        fuel                  = fuel_dict[fuel],
     )
     add_component!(sys, device)
 end
@@ -628,3 +663,44 @@ cost_function_dict = Dict(
     "fuel_quadratic" => make_quadratic_fuel,
     "cost_piecewise" => make_piecewise_cost
 )
+
+function parse_operation_cost(cost_str::Union{String, Missing})
+    ismissing(cost_str) && return nothing
+
+    # ── Extract initial_input (first number in PiecewiseIncrementalCurve) ─────
+    m_init = match(r"PiecewiseIncrementalCurve\(([0-9eE.+-]+),", cost_str)
+    isnothing(m_init) && return nothing
+    initial_input = parse(Float64, m_init.captures[1])
+
+    # ── Extract x_coords [0.0, 22.0, ...] ────────────────────────────────────
+    m_x = match(r"\[([0-9eE.,\s+-]+)\],\s*\[", cost_str)
+    isnothing(m_x) && return nothing
+    x_coords = parse.(Float64, strip.(split(m_x.captures[1], ",")))
+
+    # ── Extract y_coords [...] ────────────────────────────────────────────────
+    m_y = match(r"\[([0-9eE.,\s+-]+)\]\)", cost_str)
+    isnothing(m_y) && return nothing
+    y_coords = parse.(Float64, strip.(split(m_y.captures[1], ",")))
+
+    # ── Extract fuel_cost (number after NATURAL_UNITS = 2,) ───────────────────
+    m_fuel = match(r"NATURAL_UNITS = 2,\s*([0-9eE.+-]+)", cost_str)
+    isnothing(m_fuel) && return nothing
+    fuel_cost = parse(Float64, m_fuel.captures[1])
+
+    # ── Extract startup and shutdown costs (last two numbers) ─────────────────
+    m_costs = match(r"\),\s*([0-9eE.+-]+),\s*([0-9eE.+-]+),\s*([0-9eE.+-]+)\)$", cost_str)
+    isnothing(m_costs) && return nothing
+    fixed_cost    = parse(Float64, m_costs.captures[1])
+    startup_cost  = parse(Float64, m_costs.captures[2])
+    shutdown_cost = parse(Float64, m_costs.captures[3])
+
+    return (
+        initial_input = initial_input,
+        x_coords      = x_coords,
+        y_coords      = y_coords,
+        fuel_cost     = fuel_cost,
+        fixed_cost    = fixed_cost,
+        startup_cost  = startup_cost,
+        shutdown_cost = shutdown_cost,
+    )
+end

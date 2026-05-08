@@ -22,7 +22,7 @@
 # println("Solar generators: $(nrow(solar_out))")
 
 
-include("utils.jl")
+# include("utils.jl")
 
 
 function parse_cost(cost_str::Union{String, Missing})
@@ -61,7 +61,6 @@ fuels        = Vector{Any}(undef, n)
 
 for i in 1:n
     row = generator_data[i, :]
- 
     bus_numbers[i]  = 1          # copper plate — single bus
     ids[i]          = 1          # copper plate — single bus
     names_[i]       = row.name
@@ -220,29 +219,26 @@ for row in eachrow(generator_data)
     generation_time_series_map[row["TS column name"]] = ts_data
 end
 
+
 @info "---- Adding Generators to the System ----"
 
 for row in eachrow(generator_data)
-    bus = new_bus
-    ts_data = get(generation_time_series_map, row["TS column name"], nothing)  
-    println(row[:Name])  
+    ts_data = get(generation_time_series_map, row["TS column name"], nothing)
     gen = FUEL_MAP[row["Type"]](
         sys,
         row["Name"],
-        row["Base Power"],
-        new_bus, 
+        Float64(row["Base Power"]),
+        new_bus,
         (min = row["Min Active Power"]/row["Base Power"], max = row["Max Active Power"]/row["Base Power"]),
         (min = 0.0, max = 0.0),
         ts_data,
-        #TODO call the operation cost instead of parsing fuel cost and fuel rate separately
-        Float64(row["Fuel Rate"]), #heat rate de NTP
-        Float64(row["Fuel Cost"]), # avg cost form /Users/sabrilg/Documents/GitHub/IL-TA/Data/avg_fuel_cost.csv
+        Float64(row["Fuel Rate"]),   # still needed as fallback
+        Float64(row["Fuel Cost"]),   # still needed as fallback
         1,
         row[:fuel],
         row[:"Prime Mover"]
     )
 end
-
 
 
 # for (bus, gens) in gen_buses
@@ -304,5 +300,7 @@ end
 #     )
 #     @info "Added $(row["Type"]) Generator $(row["Name"]) to the System at Bus $(row["Bus Number"])"
 # end
+
+
 
 set_units_base_system!(sys, "SYSTEM_BASE")
